@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import {useRouter} from "next/router";
 import { AuthService } from "@/services/authService";
 import styles from "@/styles/login.module.css"
 
 export default function LoginView() {
+    const router = useRouter();
     const [pin, setPin] = useState("");
     const [error, setError] = useState("");
     const [usuarioAutenticado, setUsuarioAutenticado] = useState(null);
@@ -12,14 +14,17 @@ export default function LoginView() {
         const handleKeyDown = (e) => {
             if (usuarioAutenticado) return;
             if (e.key >= "0" && e.key <= "9") {
+                // eslint-disable-next-line react-hooks/immutability
                 handlePressNum(e.key);
             } else if (e.key === "Backspace") {
+                // eslint-disable-next-line react-hooks/immutability
                 handleDelete();
             }
         };
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [pin, usuarioAutenticado]);
 
     const handlePressNum = (num) => {
@@ -44,11 +49,36 @@ export default function LoginView() {
         setError("");
     };
 
+    const redirigirPorRol = (rol) => {
+        switch (rol) {
+            case "admin":
+                router.push("admin/usuarios");
+                break;
+            case "mesero":
+                router.push("/menu");
+                break;
+            case "cajero":
+                router.push("/caja");
+                break;
+            case "cocina": 
+            router.push("/cocina");
+                break;
+            default:
+                router.push("/");
+        }
+    }
+
     const validarPin = async (pinAValidar) => {
         setCargando(true);
         try {
             const usuario = await AuthService.loginConPin(pinAValidar);
             setUsuarioAutenticado(usuario);
+
+            localStorage.setItem("usuario_pos", JSON.stringify(usuario));
+
+            setTimeout(() => {
+                redirigirPorRol(usuario.rol);
+            }, 800);
         } catch (err) {
             setError(err.message || "PIN inválido");
             setPin("");

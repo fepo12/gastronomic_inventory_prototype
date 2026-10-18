@@ -1,7 +1,6 @@
 import { useState, useEffect, use } from "react";
 import { UsuariosService } from "@/services/usuariosService";
 import styles from "@/styles/usuarios.module.css"
-import { Caravan } from "lucide-react";
 
 export default function GestionUsuarios() {
     const [personal, setPersonal] = useState([]);
@@ -20,6 +19,7 @@ export default function GestionUsuarios() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         cargarPersonal();
     }, []);
 
