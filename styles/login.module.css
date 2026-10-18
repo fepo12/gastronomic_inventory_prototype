@@ -1,0 +1,97 @@
+.loginContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #0b0f19;
+  color: #ffffff;
+  font-family: system-ui, -apple-system, sans-serif;
+  padding: 1rem;
+}
+
+.loginCard {
+  background: #131c2e;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid #1e293b;
+  width: 100%;
+  max-width: 360px;
+  text-align: center;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+.title {
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.subtitle {
+  color: #94a3b8;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.pinDisplay {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.pinDot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #3b82f6;
+  background-color: transparent;
+  transition: all 0.15s ease;
+}
+
+.pinDotActive {
+  background-color: #3b82f6;
+  box-shadow: 0 0 8px #3b82f6;
+}
+
+.keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.keyBtn {
+  background-color: #1e293b;
+  color: #ffffff;
+  border: 1px solid #334155;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  font-size: 1.25rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.keyBtn:active {
+  background-color: #334155;
+}
+
+.keyBtnAction {
+  background-color: #334155;
+  color: #f87171;
+  font-size: 1rem;
+}
+
+.errorText {
+  color: #ef4444;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+}
+
+.userCard {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background-color: #064e3b;
+  border: 1px solid #10b981;
+  border-radius: 0.5rem;
+  text-align: left;
+}
