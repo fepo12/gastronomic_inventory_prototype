@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { CajaService } from "@/services/cajaService";
+import { supabase } from "@/lib/supabaseClient";
 import styles from "@/styles/caja.module.css";
 
 export default function CajaView() {
@@ -8,7 +9,6 @@ export default function CajaView() {
   const [usuario, setUsuario] = useState(null);
   const [turnoActivo, setTurnoActivo] = useState(null);
   const [montoInicial, setMontoInicial] = useState("");
-  const [montoFinal, setMontoFinal] = useState("");
   const [tabActiva, setTabActiva] = useState("pendientes"); 
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState("");
@@ -30,6 +30,19 @@ export default function CajaView() {
     cargarDatosIniciales();
   }, [router]);
 
+  useEffect(() => {
+    if (!turnoActivo) return;
+    const canalVentas = supabase.channel("realtime-caja-ventas").on("postgres_changes", {event: "*", schema: "public", table: "ventas"},
+      async () => {
+        // eslint-disable-next-line react-hooks/immutability
+        await recargarTodo(turnoActivo.id);
+      }
+    ).subscribe();
+    return () => {
+      supabase.removeChannel(canalVentas);
+    };
+  }, [turnoActivo]);
+
   const cargarDatosIniciales = async () => {
     setCargando(true);
     try {
@@ -42,6 +55,16 @@ export default function CajaView() {
       setError(err.message);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const recargarTodo = async (turnoId) => {
+    try {
+      const turnoActualizado = await CajaService.obtenerTurnoActivo();
+      setTurnoActivo(turnoActualizado);
+      await cargarComandas(turnoId);
+    } catch (err) {
+      console.error("Error al sincronizar en Realtime:", err.message);
     }
   };
 
@@ -91,10 +114,7 @@ export default function CajaView() {
         montoTotal: pedido.total || pedido.monto_total,
         turnoactivo: turnoActivo,
       });
-
-      const turnoActualizado = await CajaService.obtenerTurnoActivo();
-      setTurnoActivo(turnoActualizado);
-      await cargarComandas(turnoActualizado.id);
+      await recargarTodo(turnoActivo.id);
     } catch (err) {
       setError("Error al procesar el cobro: " + err.message);
     }
@@ -244,20 +264,22 @@ export default function CajaView() {
                   <div className={styles.ordersList}>
                     {pedidosPendientes.map((pedido) => (
                       <div key={pedido.id} className={styles.orderCard}>
-                        <div className={styles.orderHeader}>
-                          <div>
-                            <strong>Mesa #{pedido.mesa_id || pedido.mesa || "Llevar"}</strong>
-                            <span style={{color: "#94a3b8", fontSize: "0.8rem", marginLeft: "8px"}}>
-                              Comanda #{pedido.Id}
+                        <div className={styles.orderInfo}>
+                          <div className={styles.mesaHeader}>
+                            <span className={styles.mesaTitle}>
+                              Mesa #{pedido.mesa_id || pedido.mesa || "Llevar"}
+                            </span>
+                            <span className={styles.comandaNum}>
+                              Comanda #{pedido.id}
+                            </span>
+                            <span className={styles.orderTotal}>
+                              ${(pedido.total || pedido.monto_total || 0).toLocaleString()}
                             </span>
                           </div>
-                          <span className={styles.orderTotal}>
-                            ${(pedido.total || pedido.monto_total || 0).toLocaleString()}
-                          </span>
                         </div>
 
-                        <div className={styles.paymentSelector}>
-                          <label>Medio de Pago</label>
+                        <div className={styles.paymentCol}>
+                          <label className={styles.paymentLabel}>Medio de Pago</label>
                           <select
                           value={metodosPagoSeleccionado[pedido.id] || "efectivo"}
                           onChange={(e) => handleCambioMetodoPago(pedido.id, e.target.value)}
@@ -268,11 +290,13 @@ export default function CajaView() {
                           </select>
                         </div>
 
-                        <button
-                        onClick={() => handleConfirmarCobro(pedido)}
-                        className={styles.btnSuccess}>
-                          ✅ Confirmar y Registrar Pago
-                        </button>
+                        <div className={styles.confirmCol}> 
+                          <button
+                          onClick={() => handleConfirmarCobro(pedido)}
+                          className={styles.btnSuccess}>
+                            ✅ Confirmar y Registrar Pago
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

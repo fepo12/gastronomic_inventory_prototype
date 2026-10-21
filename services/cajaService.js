@@ -37,11 +37,36 @@ export const CajaService = {
         const {data, error} = await supabase
         .from("ventas")
         .select("*, detalle_ventas(*)")
-        .eq("estado_pago", "pendiente")
+        .eq("estado_pago", "pendiente_pago")
         .order("created_at", {ascending: true});
 
         if (error) throw new Error(error.message);
         return data || [];
+    },
+
+    async cobrarPedidos({pedidoIds, metodoPago, montoTotal, turnoactivo}) {
+        const {error: errorVenta} = await supabase
+        .from("ventas")
+        .update({
+            estado_pago: "pagado",
+            metodo_pago: metodoPago,
+            turno_id: turnoactivo.id,
+        })
+        .in("id", pedidoIds);
+
+        if (errorVenta) throw new Error(errorVenta.message);
+
+        if (metodoPago === "efectivo") {
+            const nuevoTotalEfectivo = (parseFloat(turnoActivo.total_ventas_efectivo) || 0) + parseFloat(montoTotal);
+
+            const {error: errorTurno} = await supabase
+            .from("turnos_caja")
+            .update({ total_ventas_efectivo: nuevoTotalEfectivo })
+            .eq("id", turnoactivo.id);
+
+            if (errorTurno) throw new Error(errorTurno.message);
+        }
+        return true;
     },
 
     async obtenerPedidosCobrados({turnoId}) {
