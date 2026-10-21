@@ -15,6 +15,7 @@ export default function CajaView() {
 
   const [pedidosPendientes, setPedidosPendientes] = useState([]);
   const [pedidosCobrados, setPedidosCobrados] = useState([]);
+  const [metodosPagoSeleccionado, setMetodosPagoSeleccionado] = useState({});
 
   useEffect(() => {
     const session = localStorage.getItem("usuario_pos");
@@ -26,18 +27,35 @@ export default function CajaView() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUsuario(userObj);
     // eslint-disable-next-line react-hooks/immutability
-    cargarTurnoActivo();
+    cargarDatosIniciales();
   }, [router]);
 
-  const cargarTurnoActivo = async () => {
+  const cargarDatosIniciales = async () => {
     setCargando(true);
     try {
       const turno = await CajaService.obtenerTurnoActivo();
       setTurnoActivo(turno);
+      if (turno) {
+        await cargarComandas(turno.id);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setCargando(false);
+    }
+  };
+
+  const cargarComandas = async (turnoId) => {
+    try {
+      const pendientes = await CajaService.obtenerPedidosPendientes();
+      setPedidosPendientes(pendientes);
+
+      if (turnoId) {
+        const cobrados = await CajaService.obtenerPedidosCobrados({ turnoId });
+        setPedidosCobrados(cobrados);
+      }
+    } catch (err) {
+      setError("Error al cargar pedidos:" + err.message);
     }
   };
 
@@ -56,35 +74,67 @@ export default function CajaView() {
       });
       setTurnoActivo(nuevoTurno);
       setMontoInicial("");
+      await cargarComandas(nuevoTurno.id);
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const handleConfirmarCobro = async (pedido) => {
+    const metodoPago = metodosPagoSeleccionado[pedido.Id] || "efectivo";
+
+    try {
+      setError("");
+      await CajaService.cobrarPedido({
+        pedidoId: pedido.id,
+        metodoPago: metodoPago,
+        montoTotal: pedido.total || pedido.monto_total,
+        turnoactivo: turnoActivo,
+      });
+
+      const turnoActualizado = await CajaService.obtenerTurnoActivo();
+      setTurnoActivo(turnoActualizado);
+      await cargarComandas(turnoActualizado.id);
+    } catch (err) {
+      setError("Error al procesar el cobro: " + err.message);
     }
   };
 
   const handleCerrarCaja = async (e) => {
     e.preventDefault();
-    if (!montoFinal || isNaN(montoFinal)) {
-      setError("Ingresa el monto de arqueo final.");
-      return;
-    }
+    const baseInicial = parseFloat(turnoActivo.monto_inicial || 0);
+    const totalVentasEfectivo = parseFloat(turnoActivo.total_venta_efectivo || 0);
+    const arqueoCalculado = baseInicial + totalVentasEfectivo;
 
     try {
       setError("");
+      setCargando(true);
+
       await CajaService.cerrarTurno({
         turnoId: turnoActivo.id,
-        montoFinal: parseFloat(montoFinal),
-        totalVentas: 0
+        montoInicial: turnoActivo.monto_inicial,
+        totalVentas: parseFloat(turnoActivo.total_venta_efectivo || 0),
+        totalEfectivo: turnoActivo.total_venta_efectivo || 0,
       });
       setTurnoActivo(null);
-      setMontoFinal("");
     } catch (err) {
-      setError(err.message);
+      setError("Error al cerrar la caja: " + err.message);
+    } finally {
+      setCargando(false);
     }
+
   };
 
   const handleCerrarSesion = () => {
     localStorage.removeItem("usuario_pos");
     router.push("/login");
+  };
+
+  const handleCambioMetodoPago = (pedidoId, metodo) => { 
+    setMetodosPagoSeleccionado((prev) => ({
+      ...prev, 
+      [pedidoId]: metodo,
+    }));
   };
 
   const obtenerHoraApertura = (fechaStr) => {
@@ -103,6 +153,10 @@ export default function CajaView() {
     );
   }
 
+  const totalEfectivoVentas = parseFloat(turnoActivo?.total_venta_efectivo || 0);
+  const baseInicial = parseFloat(turnoActivo?.monto_inicial || 0);
+  const totalArqueoEfectivo = baseInicial + totalEfectivoVentas;
+
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -119,10 +173,9 @@ export default function CajaView() {
 
       <main>
         {turnoActivo ? (
-          /* CAJA ABIERTA: DASHBOARD COMPLETO DE 2 COLUMNAS */
+          
           <div className={styles.dashboardGrid}>
             
-            {/* COLUMNA 1: RESUMEN Y CIERRE */}
             <div className={styles.card}>
               <span className={`${styles.statusBadge} ${styles.badgeOpen}`}>
                 ● CAJA ABIERTA
@@ -135,36 +188,33 @@ export default function CajaView() {
               <div className={styles.infoGrid}>
                 <div className={styles.infoItem}>
                   <label>Base Inicial</label>
-                  <span>${parseFloat(turnoActivo.monto_inicial).toFixed(2)}</span>
+                  <span>${baseInicial.toLocaleString()}</span>
                 </div>
                 <div className={styles.infoItem}>
-                  <label>Responsable</label>
-                  <span style={{ fontSize: "0.95rem" }}>
-                    {turnoActivo.usuarios?.nombre || usuario.nombre}
+                  <label>Ventas en efectivo</label>
+                  <span style={{ color: "#10b981" }}>
+                    {totalEfectivoVentas.toLocaleString()}
+                  </span>
+                </div>
+                <div className={styles.infoItem} style={{gridColumn: "span 2"}}>
+                  <label>Efectivo Total Esperando en Caja (Arqueo)</label>
+                  <span style={{fontSize: "1.4rem", color: "#60a5fa"}}>
+                    ${totalArqueoEfectivo.toLocaleString()}
                   </span>
                 </div>
               </div>
 
-              <form onSubmit={handleCerrarCaja}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Monto Final en Efectivo (Arqueo):</label>
-                  <input
-                    type="number"
-                    step="any"
-                    placeholder="0.00"
-                    value={montoFinal}
-                    onChange={(e) => setMontoFinal(e.target.value)}
-                    className={styles.input}
-                    required
-                  />
-                </div>
-                <button type="submit" className={styles.btnDanger}>
+                <div style={{marginTop: "1.5rem"}}>
+                  <button 
+                  type="submit"
+                  onClick={handleCerrarCaja} 
+                  className={styles.btnDanger}
+                  style={{width: "100%"}}>
                   🔒 Realizar Cierre de Caja
-                </button>
-              </form>
+                  </button>
+                </div>
             </div>
 
-            {/* COLUMNA 2: COMANDAS / CUENTAS POR COBRAR Y COBRADAS */}
             <div className={styles.card}>
               <div className={styles.tabsHeader}>
                 <button
@@ -192,7 +242,39 @@ export default function CajaView() {
                   </div>
                 ) : (
                   <div className={styles.ordersList}>
-                    {/* Render de pedidos por cobrar */}
+                    {pedidosPendientes.map((pedido) => (
+                      <div key={pedido.id} className={styles.orderCard}>
+                        <div className={styles.orderHeader}>
+                          <div>
+                            <strong>Mesa #{pedido.mesa_id || pedido.mesa || "Llevar"}</strong>
+                            <span style={{color: "#94a3b8", fontSize: "0.8rem", marginLeft: "8px"}}>
+                              Comanda #{pedido.Id}
+                            </span>
+                          </div>
+                          <span className={styles.orderTotal}>
+                            ${(pedido.total || pedido.monto_total || 0).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className={styles.paymentSelector}>
+                          <label>Medio de Pago</label>
+                          <select
+                          value={metodosPagoSeleccionado[pedido.id] || "efectivo"}
+                          onChange={(e) => handleCambioMetodoPago(pedido.id, e.target.value)}
+                          className={styles.selectInput}>
+                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="tarjeta">💳 Tarjeta / Datáfono</option>
+                            <option value="transferencia">📱 Transferencia / Nequi</option>
+                          </select>
+                        </div>
+
+                        <button
+                        onClick={() => handleConfirmarCobro(pedido)}
+                        className={styles.btnSuccess}>
+                          ✅ Confirmar y Registrar Pago
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )
               ) : (
@@ -203,7 +285,17 @@ export default function CajaView() {
                   </div>
                 ) : (
                   <div className={styles.ordersList}>
-                    {/* Render de pedidos cobrados */}
+                    {pedidosCobrados.map((pedido) => (
+                      <div key={pedido.id} className={styles.orderCardCobrada}>
+                        <div>
+                          <strong>Mesa #{pedido.mesa_id || pedido.mesa || "Levar"}</strong> -$
+                          {(pedido.total || pedido.monto_total || 0).toLocaleString()}
+                        </div>
+                        <span className={styles.badgePaid}>
+                          {pedido.metodo_pago === "efectivo" ? "💵 Efectivo" : "💳 Electrónico"}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )
               )}

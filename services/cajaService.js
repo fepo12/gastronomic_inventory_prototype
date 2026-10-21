@@ -23,6 +23,7 @@ export const CajaService = {
             .insert([{
                 usuario_id: usuarioId,
                 monto_inicial: parseFloat(montoInicial) || 0,
+                total_ventas_efectivo: 0,
                 estado: "abierto"
             }])
             .select("*, usuarios(nombre, rol)")
@@ -30,6 +31,54 @@ export const CajaService = {
         
         if (error) throw new Error(error.message);
         return data;
+    },
+
+    async obtenerPedidosPendientes() {
+        const {data, error} = await supabase
+        .from("ventas")
+        .select("*, detalle_ventas(*)")
+        .eq("estado_pago", "pendiente")
+        .order("created_at", {ascending: true});
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    },
+
+    async obtenerPedidosCobrados({turnoId}) {
+        const {data, error} = await supabase
+        .from("ventas")
+        .select("*, detalle_ventas(*)")
+        .eq("turno_id", turnoId)
+        .eq("estado_pago", "pendiente")
+        .order("created_at", {ascending: false});
+
+        if (error) throw new Error(error.message);
+        return data || [];
+    },
+
+    async cobrarPedido({pedidoId, metodoPago, montoTotal, turnoactivo}) {
+        const {error: errorVenta} = await supabase
+        .from("ventas")
+        .update({
+            estado_pago: "pagado",
+            metodo_pago: metodoPago,
+            turno_id: turnoactivo.id,
+            updated_at: new Date().toISOString(),
+        })
+        .eq("id", pedidoId);
+
+        if (errorVenta) throw new Error(errorVenta.message);
+
+        if (metodoPago === "efectivo") {
+            const nuevoTotalEfectivo = (parseFloat(turnoactivo.total_ventas_efectivo) + parseFloat(montoTotal)) || 0;
+            const {error: errorTurno} = await supabase
+                .from("turnos_caja")
+                .update({ total_ventas_efectivo: nuevoTotalEfectivo })
+                .eq("id", turnoactivo.id);
+
+            if (errorTurno) throw new Error(errorTurno.message);
+        }
+        return true;
     },
 
     async cerrarTurno({turnoId, montoFinal, totalVentas, observaciones}) {
@@ -40,7 +89,7 @@ export const CajaService = {
             total_ventas_efectivo: parseFloat(totalVentas) || 0,
             estado: "cerrado",
             closed_at: new Date().toISOString(),
-            observaciones
+            observaciones: observaciones || "Cierre automatico Caja",
         })
         .eq ("id", turnoId)
         .select()
