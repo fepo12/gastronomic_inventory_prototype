@@ -2,14 +2,28 @@ import { supabase } from "@/lib/supabaseClient";
 
 export const CajaService = {
     async obtenerTurnoActivo() {
-        const {data, error} = await supabase
+        const {data: turno, error} = await supabase
         .from("turnos_caja")
         .select("*, usuarios(nombre, rol)")
         .eq("estado", "abierto")
         .maybeSingle();
 
-        if (error) throw new Error(error.message);
-        return data;
+        if (error || !turno) return null;
+        
+        const {data: ventasEfectivo, error: erroVentas} = await supabase
+        .from("ventas")
+        .select("total")
+        .eq("turno_id", turno.id)
+        .eq("estado_pago", "pagado")
+        .eq("metodo_pago", "efectivo")
+
+        const totalCalculado = (ventasEfectivo || []).reduce(
+        (acc, v) => acc + parseFloat(v.total || 0), 0
+        );
+
+        return {
+            ...turno, total_venta_efectivo: totalCalculado,
+        };
     },
 
     async abrirTurno({usuarioId, montoInicial}) {
@@ -44,25 +58,26 @@ export const CajaService = {
         return data || [];
     },
 
-    async cobrarPedidos({pedidoIds, metodoPago, montoTotal, turnoactivo}) {
+    async cobrarPedidos({pedidoId, metodoPago, montoTotal, turnoActivo}) {
         const {error: errorVenta} = await supabase
         .from("ventas")
         .update({
             estado_pago: "pagado",
             metodo_pago: metodoPago,
-            turno_id: turnoactivo.id,
+            turno_id: turnoActivo.id,
         })
-        .in("id", pedidoIds);
+        .eq("id", pedidoId);
 
         if (errorVenta) throw new Error(errorVenta.message);
 
         if (metodoPago === "efectivo") {
-            const nuevoTotalEfectivo = (parseFloat(turnoActivo.total_ventas_efectivo) || 0) + parseFloat(montoTotal);
+            const acumuladoActual = parseFloat(turnoActivo.total_ventas_efectivo || turnoActivo.total_venta_efectivo || 0);
+            const nuevoTotalEfectivo = acumuladoActual + parseFloat(montoTotal || 0);
 
             const {error: errorTurno} = await supabase
             .from("turnos_caja")
             .update({ total_ventas_efectivo: nuevoTotalEfectivo })
-            .eq("id", turnoactivo.id);
+            .eq("id", turnoActivo.id);
 
             if (errorTurno) throw new Error(errorTurno.message);
         }
@@ -79,31 +94,6 @@ export const CajaService = {
 
         if (error) throw new Error(error.message);
         return data || [];
-    },
-
-    async cobrarPedido({pedidoId, metodoPago, montoTotal, turnoactivo}) {
-        const {error: errorVenta} = await supabase
-        .from("ventas")
-        .update({
-            estado_pago: "pagado",
-            metodo_pago: metodoPago,
-            turno_id: turnoactivo.id,
-            updated_at: new Date().toISOString(),
-        })
-        .eq("id", pedidoId);
-
-        if (errorVenta) throw new Error(errorVenta.message);
-
-        if (metodoPago === "efectivo") {
-            const nuevoTotalEfectivo = (parseFloat(turnoactivo.total_ventas_efectivo) + parseFloat(montoTotal)) || 0;
-            const {error: errorTurno} = await supabase
-                .from("turnos_caja")
-                .update({ total_ventas_efectivo: nuevoTotalEfectivo })
-                .eq("id", turnoactivo.id);
-
-            if (errorTurno) throw new Error(errorTurno.message);
-        }
-        return true;
     },
 
     async cerrarTurno({turnoId, montoFinal, totalVentas, observaciones}) {

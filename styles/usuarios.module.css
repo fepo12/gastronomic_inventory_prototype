@@ -6,6 +6,38 @@
   font-family: system-ui, -apple-system, sans-serif;
 }
 
+.header {
+   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header p {
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.btnSalir {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnSalir:hover {
+  background-color: #dc2626;
+}
+
 .subtitle {
   color: #94a3b8;
 }
@@ -25,6 +57,7 @@
   padding: 1.5rem;
   border-radius: 1rem;
   border: 1px solid #1e293b;
+  margin-bottom: 24px;
 }
 
 .fieldGroup {

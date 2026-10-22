@@ -104,15 +104,15 @@ export default function CajaView() {
   };
 
   const handleConfirmarCobro = async (pedido) => {
-    const metodoPago = metodosPagoSeleccionado[pedido.Id] || "efectivo";
+    const metodoPago = metodosPagoSeleccionado[pedido.id] || "efectivo";
 
     try {
       setError("");
-      await CajaService.cobrarPedido({
+      await CajaService.cobrarPedidos({
         pedidoId: pedido.id,
         metodoPago: metodoPago,
         montoTotal: pedido.total || pedido.monto_total,
-        turnoactivo: turnoActivo,
+        turnoActivo: turnoActivo,
       });
       await recargarTodo(turnoActivo.id);
     } catch (err) {
@@ -284,7 +284,7 @@ export default function CajaView() {
                           value={metodosPagoSeleccionado[pedido.id] || "efectivo"}
                           onChange={(e) => handleCambioMetodoPago(pedido.id, e.target.value)}
                           className={styles.selectInput}>
-                            <option value="Efectivo">💵 Efectivo</option>
+                            <option value="efectivo">💵 Efectivo</option>
                             <option value="tarjeta">💳 Tarjeta / Datáfono</option>
                             <option value="transferencia">📱 Transferencia / Nequi</option>
                           </select>

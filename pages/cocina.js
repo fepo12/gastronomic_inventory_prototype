@@ -7,6 +7,7 @@ import styles from "@/styles/cocina.module.css";
 export default function CocinaView() {
     const [pedidos, setPedidos] = useState([]);
     const [cargando, setCargando] = useState(true);
+    const router = useRouter();
 
     const cargarPedidos = async () => {
         try {
@@ -39,7 +40,7 @@ export default function CocinaView() {
             alert("Error: No se encontró el ID del pedido");
             return;
         }
-        
+
         try {
             await CocinaService.actualizarEstadoCocina(id, "listo");
             setPedidos((prev) => prev.filter((p) => p.id !== id));
@@ -49,7 +50,7 @@ export default function CocinaView() {
     };
 
     const handleCerrarSesion = async () => {
-        await supabase.auth.singOut();
+        localStorage.removeItem("usuario_pos");
         router.push("/login")
     }
 

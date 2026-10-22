@@ -1,5 +1,6 @@
 import { useState, useEffect, use } from "react";
 import { UsuariosService } from "@/services/usuariosService";
+import { useRouter } from "next/router";
 import styles from "@/styles/usuarios.module.css"
 
 export default function GestionUsuarios() {
@@ -8,6 +9,7 @@ export default function GestionUsuarios() {
     const [rol, setRol] = useState('mesero');
     const [nuevoPin, setNuevoPin] = useState(null);
     const [cargando, setCargando] = useState(false);
+    const router = useRouter();
 
     const cargarPersonal = async () => {
         try {
@@ -52,10 +54,22 @@ export default function GestionUsuarios() {
         }
     };
 
+    const handleCerrarSesion = () => {
+    localStorage.removeItem("usuario_pos");
+    router.push("/login");
+     };
+
     return (
         <div className={styles.container}>
-            <h1>Administracion de Personal</h1>
-            <p className={styles.subtitle}>Registrar empleados. El PIN de 4 digitos se generara automaticamente</p>
+            <header className={styles.header}>
+                <div>
+                    <h1>Administracion de Personal</h1>
+                    <p className={styles.subtitle}>Registrar empleados. El PIN de 4 digitos se generara automaticamente</p>
+                </div>
+                <button onClick={handleCerrarSesion} className={styles.btnSalir}>
+                    🚪 Cerrar Sesión
+                </button>
+            </header>
 
             <div className={styles.layputGrid}>
                 {/*Formulario*/}
