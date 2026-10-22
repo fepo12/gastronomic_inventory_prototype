@@ -2,9 +2,50 @@ import { supabase } from "@/lib/supabaseClient";
 
 export const VentasService = {
   async obtenerProductos() {
-    const { data, error } = await supabase.from('productos').select('*');
+    const { data, error } = await supabase
+    .from('productos')
+    .select('*')
+    .order('nombre', { ascending: true });
+
     if (error) throw new Error(error.message);
-    return data;
+    return data || [];
+  },
+
+  async crearPedido({mesaId, origen, items, usuarioId}) {
+    const totalCalculado = items.reduce (
+      (acc, prod) => acc + parseFloat(prod.precio) * prod.cantidad, 0
+    );
+    
+    const {data: venta, error: errorVenta} = await supabase
+    .from("ventas")
+    .insert([{
+      mesa: mesaId || null,
+      origen: origen || "dispositivo_mesero",
+      total: totalCalculado,
+      estado_pago: "pendiente_pago",
+      estado_cocina: "pendiente",
+      usuario_id: usuarioId || null, 
+    }])
+    .select()
+    .single();
+
+    if (errorVenta) throw new Error(errorVenta.message);
+
+    const detalles = items.map((prod) => ({
+      venta_id: venta.id,
+      producto_id: prod.id, 
+      cantidad: prod.cantidad,
+      precio_unitario: prod.precio,
+      subtotal: parseFloat(prod.precio) * prod.cantidad 
+    }));
+
+    const {error: errorDetalle} = await supabase
+    .from("detalle_ventas")
+    .insert(detalles);
+
+    if (errorDetalle) throw new Error(errorDetalle.message);
+
+    return venta;
   },
 
   async registrarOrden({ usuario, origen, mesa, metodoPago, carrito, total }) {

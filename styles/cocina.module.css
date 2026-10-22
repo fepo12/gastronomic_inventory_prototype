@@ -1,0 +1,137 @@
+.container {
+  padding: 2rem;
+  background-color: #0f172a;
+  min-height: 100vh;
+  color: #f8fafc;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.header {
+    display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.header p {
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+.btnSalir {
+  background-color: #ef4444;
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: 6px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnSalir:hover {
+  background-color: #dc2626;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.card {
+  background-color: #1e293b;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.cardHeader {
+  background-color: #334155;
+  padding: 0.8rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cardHeader h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #38bdf8;
+}
+
+.time {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  font-weight: bold;
+}
+
+.cardBody {
+  padding: 1rem;
+}
+
+.cardBody ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.cardBody li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed #334155;
+  font-size: 1.1rem;
+}
+
+.qty {
+  font-weight: bold;
+  color: #f59e0b;
+}
+
+.itemName {
+  color: #f1f5f9;
+}
+
+.cardFooter {
+  padding: 1rem;
+}
+
+.btnListo {
+  width: 100%;
+  background-color: #16a34a;
+  color: white;
+  border: none;
+  padding: 0.8rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btnListo:hover {
+  background-color: #15803d;
+}
+
+.loading, .empty {
+  text-align: center;
+  color: #94a3b8;
+  margin-top: 4rem;
+  font-size: 1.2rem;
+}
+
+.empty span {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}

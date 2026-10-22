@@ -1,31 +1,108 @@
-import {useState, useEffect} from "react";
-import {useRouter} from "next/router";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import { CocinaService } from "@/services/cocinaService";
+import { useRouter } from "next/router";
+import styles from "@/styles/cocina.module.css";
 
 export default function CocinaView() {
-    const router = useRouter();
-    const [usuario, setUsuario] = useState(null);
+    const [pedidos, setPedidos] = useState([]);
+    const [cargando, setCargando] = useState(true);
+
+    const cargarPedidos = async () => {
+        try {
+            const data = await CocinaService.obtenerPedidosCocina();
+            setPedidos(data || []);
+        } catch (err) {
+            console.error("Error al cargar pedidos de cocina:", err);
+        } finally {
+            setCargando(false);
+        }
+    };
 
     useEffect(() => {
-        const session = localStorage.getItem("usuario_pos");
-        if (!session) {
-            router.push("/login");
-        } else {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
-            setUsuario(JSON.parse(session));
-        }
-    }, [router]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        cargarPedidos();
 
-    if (!usuario) return null;
-    
+        const canalCocina = supabase
+        .channel("realtime_cocina")
+        .on("postgres_changes", {event: "*", schema: "public", table: "ventas"}, () => {
+            cargarPedidos();
+        }).subscribe();
+        return () => {
+            supabase.removeChannel(canalCocina);
+        };
+    }, []);
+
+    const handleCompletarPedido = async (id) => {
+        if (!id) {
+            console.error("El ID del pedido es undefined/nulo", id);
+            alert("Error: No se encontró el ID del pedido");
+            return;
+        }
+        
+        try {
+            await CocinaService.actualizarEstadoCocina(id, "listo");
+            setPedidos((prev) => prev.filter((p) => p.id !== id));
+        } catch (err) {
+            alert("Error al actualizar pedido:" + err.message);
+        }
+    };
+
+    const handleCerrarSesion = async () => {
+        await supabase.auth.singOut();
+        router.push("/login")
+    }
+
     return (
-        <div style={{padding: "2rem", color: "#fff", backgroundColor: "#0b0f19", minHeight: "100hv"}}>
-            <h1>🍳 Pantalla de Cocina (KDS)</h1>
-            <p>Bienvenodp, <strong>{usuario.nombre}</strong>({usuario.rol.toUpperCase()})</p>
-            <button
-            onClick={() => {localStorage.removeItem("usuario_pos"); router.push("/login");}}
-            style={{padding: "0.5rem 1rem", backgroundColor: "#ef4444", color: "#fff", border: "none", borderRadius: "0.375rem", cursor: "pointer"}}>
-                Cerrar Sesión
-            </button>
+        <div className={styles.container}>
+            <header className={styles.header}>
+                <div>
+                    <h1>👨‍🍳 Pantalla de Cocina / KDS</h1>
+                    <p>Comandas pendientes en tiempo real</p>
+                </div>
+                <button onClick={handleCerrarSesion} className={styles.btnSalir}>
+                    🚪 Cerrar Sesión
+                </button>
+            </header>
+
+            {cargando ? (
+                <p className={styles.loading}>Cargando comandas...</p>
+            ) : pedidos.length === 0 ? (
+                <div className={styles.empty}>
+                    <span>🍳</span>
+                    <p>No hay comandas pendientes por preparar</p>
+                </div>
+            ) : (
+                <div className={styles.grid}>
+                    {pedidos.map((pedido) => (
+                        <div key={pedido.id} className={styles.card}>
+                            <div className={styles.cardHeader}>
+                                <h2>{pedido.origen === "dispositivo_mesero" && pedido.mesa !== "llevar" ? `Mesa #${pedido.mesa}` : "🛍️ Para Llevar"}</h2>
+                                <span className={styles.time}>
+                                    {new Date(pedido.created_at).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"})}
+                                </span>
+                            </div>
+
+                            <div className={styles.cardBody}>
+                                <ul>
+                                    {pedido.detalle_ventas?.map((item) => (
+                                        <li key={item.id}>
+                                            <span className={styles.qty}>{item.cantidad}</span>
+                                            <span className={styles.itenName}>{item.nombre}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+
+                            <div className={styles.cardFooter}>
+                                <button onClick={() => handleCompletarPedido(pedido.id)} className={styles.btnListo}>
+                                    ✅ Marcar como Listo
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
