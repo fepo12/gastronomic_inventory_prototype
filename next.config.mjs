@@ -1,16 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
-  reactCompiler: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
-      },
-    },
-  },
   reactStrictMode: true,
+  // Desactiva la compilación por Turbopack para CSS modules si está presente
+  experimental: {
+    turbo: undefined
+  }
 };
 
-export default nextConfig;
+module.exports = nextConfig;
