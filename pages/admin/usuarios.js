@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect} from "react";
 import { UsuariosService } from "@/services/usuariosService";
 import { useRouter } from "next/router";
 import styles from "@/styles/usuarios.module.css"

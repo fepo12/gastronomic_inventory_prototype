@@ -51,7 +51,7 @@ export const UsuariosService = {
         return data || [];
     },
 
-    async cambiarEstadoUsuario(){
+    async cambiarEstadoUsuario(usuarioId, nuevoEstado){
         const {data, error} = await supabase
         .from('usuarios')
         .update({activo: nuevoEstado})
