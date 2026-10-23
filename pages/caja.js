@@ -114,7 +114,13 @@ export default function CajaView() {
         montoTotal: pedido.total || pedido.monto_total,
         turnoActivo: turnoActivo,
       });
-      await recargarTodo(turnoActivo.id);
+      
+      if (turnoActivo?.id) {
+        await recargarTodo(turnoActivo.id);
+        const turnoActualizado = await CajaService.obtenerTurnoActivo();
+        setTurnoActivo(turnoActualizado);
+      }
+
     } catch (err) {
       setError("Error al procesar el cobro: " + err.message);
     }
@@ -312,7 +318,7 @@ export default function CajaView() {
                     {pedidosCobrados.map((pedido) => (
                       <div key={pedido.id} className={styles.orderCardCobrada}>
                         <div>
-                          <strong>Mesa #{pedido.mesa_id || pedido.mesa || "Levar"}</strong> -$
+                          <strong>Mesa #{pedido.mesa_id || pedido.mesa || "Levar"}</strong> $
                           {(pedido.total || pedido.monto_total || 0).toLocaleString()}
                         </div>
                         <span className={styles.badgePaid}>

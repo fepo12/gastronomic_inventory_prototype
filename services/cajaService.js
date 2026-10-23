@@ -89,7 +89,7 @@ export const CajaService = {
         .from("ventas")
         .select("*, detalle_ventas(*)")
         .eq("turno_id", turnoId)
-        .eq("estado_pago", "pendiente")
+        .eq("estado_pago", "pagado")
         .order("created_at", {ascending: false});
 
         if (error) throw new Error(error.message);
@@ -112,5 +112,19 @@ export const CajaService = {
 
         if (error) throw new Error(error.message);
         return data;
+    },
+
+    async obtenerVentasPorTurnos (turnoId) {
+        if (!turnoId) return[];
+
+        const {data, error} = await supabase
+        .from("ventas")
+        .select(`
+            id, total, metodo_pago, created_at, estado, detalle_venta (cantidad, precio_unitario, productos (nombre))`)
+        .eq("turno_id", turnoId)
+        .order("created_at")
+
+        if (error) throw new Error(error.message);
+        return data || [];
     }
 };

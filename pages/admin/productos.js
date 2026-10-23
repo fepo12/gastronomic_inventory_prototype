@@ -15,7 +15,7 @@ export default function GestionProductos() {
         nombre: "",
         precio: "",
         categoria_id: "",
-        stock: "",
+        stock: "0",
         description: "",
     });
 

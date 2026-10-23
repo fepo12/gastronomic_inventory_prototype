@@ -14,7 +14,8 @@ export const ProductosService = {
     async obtenerCategorias() {
         const {data, error} = await supabase
         .from("categorias")
-        .select("*")
+        .select("id, nombre, activo")
+        .eq("activo", true)
         .order("nombre", {ascending: true});
 
         if (error) throw new Error(error.message);
