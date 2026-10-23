@@ -79,10 +79,10 @@ export default function GestionProductos() {
     const handleEditarClick = (prod) => {
         setEditandoId(prod.id);
         setForm({
-            nombre: prod.nombrer,
+            nombre: prod.nombre,
             precio: prod.precio,
             categoria_id: prod.categoria_id || "",
-            stock: prod.stock ?? "0",
+            stock: prod.stock || "0",
             description: prod.description || "",
         });
     };
@@ -111,7 +111,7 @@ export default function GestionProductos() {
                     <form onSubmit={handleGuardar}>
                         <div className={styles.formGroup}>
                             <label className={styles.label}>Nombre del Producto:</label>
-                            <input type="text" placeholder="Ej: Empanada de Pollo" value={form.nombre} onChange={(e) => setForm({
+                            <input type="text" placeholder="Nombre del producto" value={form.nombre} onChange={(e) => setForm({
                                 ...form, nombre: e.target.value})} className={styles.input} required/>
                         </div>
 

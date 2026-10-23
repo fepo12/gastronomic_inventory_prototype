@@ -59,6 +59,7 @@ export default function GestionUsuarios() {
     router.push("/login");
      };
 
+
     return (
         <div className={styles.container}>
             <header className={styles.header}>
@@ -66,9 +67,12 @@ export default function GestionUsuarios() {
                     <h1>Administracion de Personal</h1>
                     <p className={styles.subtitle}>Registrar empleados. El PIN de 4 digitos se generara automaticamente</p>
                 </div>
-                <button onClick={handleCerrarSesion} className={styles.btnSalir}>
+                <div className={styles.headerActions}>
+                    <button onClick={handleCerrarSesion} className={styles.btnSalir}>
                     🚪 Cerrar Sesión
-                </button>
+                    </button>
+                    <button onClick={() => router.push("/admin/productos")} className={styles.btnNav}>🍔 Ir a Productos</button>
+                </div>
             </header>
 
             <div className={styles.layputGrid}>

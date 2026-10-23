@@ -195,6 +195,9 @@ export default function CajaView() {
         <button onClick={handleCerrarSesion} className={styles.logoutBtn}>
           Cerrar Sesión
         </button>
+        <button>
+        Ir a productos
+        </button>
       </header>
 
       <main>
